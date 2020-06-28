@@ -1,0 +1,51 @@
+
+string Texture1;
+string Texture2   = "e05f3192-0642-1588-5a3d-2635b48f6e84";
+string Texture_H1 = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string Texture_H2 = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
+
+default
+{
+    state_entry()
+    {
+      llSetMemoryLimit(llGetUsedMemory() + 1024);
+    }
+    
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      llResetTime();
+      if (num == 110){
+       llSetLinkPrimitiveParamsFast(3,[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       Texture1 = llGetTexture(1);
+       llSetTexture(Texture2,1);
+      
+       llSay(0,"うんちボタンが押されたけどなんでもな\n(ﾌﾞﾘﾌﾞﾘﾌﾞﾘﾌﾞﾘｭﾘｭﾘｭﾘｭﾘｭﾘｭ！！！！！！ﾌﾞﾂﾁﾁﾌﾞﾌﾞﾌﾞﾁﾁﾁﾁﾌﾞﾘﾘｲﾘﾌﾞﾌﾞﾌﾞﾌﾞｩｩｩｩｯｯｯ");
+             
+       integer i;
+       integer index;
+       integer Drop_int =  (integer)llFrand(50 - 10) + 10;
+
+       for (i=0; i <= Drop_int; i++){
+         if (llGetTime() < 60){
+           index = (integer)llFrand(llGetInventoryNumber(INVENTORY_OBJECT));
+           string object = llGetInventoryName(INVENTORY_OBJECT,index);
+           float MIN  = -2;
+           float MAX  =  2;
+           vector xyz = <llFrand(MAX - MIN) + MIN,llFrand(MAX - MIN) + MIN,llFrand(5 - 3) + 3>;
+           llSleep(0.18);
+           llRezObject(object, llGetPos() + <0.0,0.0,0.6> , xyz , ZERO_ROTATION , 0);
+         }
+         else{
+           llSay(0,"うんちが止まらなくなったので強制終了します" ); 
+           jump loopout; 
+         }
+       }
+       　
+       @loopout;
+       llSetLinkPrimitiveParamsFast(3,[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       llSetTexture(Texture1,1);
+       llSleep(0.1);
+       llMessageLinked(LINK_THIS,111,"",NULL_KEY);
+      }
+    }
+}
