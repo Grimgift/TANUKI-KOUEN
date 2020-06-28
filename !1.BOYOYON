@@ -1,0 +1,43 @@
+vector vpos;
+vector scale;
+
+integer Ti = FALSE;
+float   CT = 1.0; 
+
+default
+{ 
+    state_entry()
+    {
+      llSetMemoryLimit(llGetUsedMemory() + 1024);
+    }
+       
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+       if (num == 200){
+         vpos = llGetPos();
+         scale = llGetScale();
+        
+         llMessageLinked(LINK_ALL_OTHERS,210,"",NULL_KEY);
+         llSleep(0.1);
+         llTriggerSound(llGetInventoryName(INVENTORY_SOUND,llFloor(llFrand(llGetInventoryNumber(INVENTORY_SOUND)))),0.2);
+         llSetLinkPrimitiveParamsFast(LINK_THIS,[PRIM_SIZE, <scale.x,scale.y,scale.z / 2>]);
+         llMessageLinked(LINK_ALL_OTHERS,211,"",NULL_KEY);
+         llSetPos(vpos - <0.0,0.0,scale.z * 0.25>);
+       }
+   }
+   
+   collision_end(integer total_number)
+   {
+     if (llDetectedType(0) & AGENT){
+       llSleep(CT);  
+       llMessageLinked(LINK_ALL_OTHERS,212,"",NULL_KEY);
+       llSetLinkPrimitiveParamsFast(LINK_THIS,[PRIM_SIZE,scale]);
+       llSetPos(vpos);
+     } 
+   }
+    
+   timer()
+   {
+     llSetTimerEvent(0);
+   }
+}
