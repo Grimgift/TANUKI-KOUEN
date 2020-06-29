@@ -1,513 +1,65 @@
 
-
-/*仕切りが入った文章の左側を抽出する関数*/
-string left(string src, string divider)
-{
-  integer index = llSubStringIndex(src,divider);
-  if (~index)
-    return llDeleteSubString(src,index,-1);
-  return src;
-}
-
-string right(string src, string divider)
-{
-  integer index = llSubStringIndex(src,divider);
-  if　(~index)
-    return llDeleteSubString(src,0,index + llStringLength(divider) - 1);
-  return src;
-}
-
-CreateIndex()
-{
-  integer i;
-  Link_Prims = ["root"];
-  integer nop = llGetNumberOfPrims();
-  for (i = 1; i <= nop; i++){
-    string linkPrim = llGetLinkName(i);
-    Link_Prims += [linkPrim];
-  }
-}
-
 integer GetIndex(string name)
 {
   return llListFindList(Link_Prims,(list)name);
 }
 
-list     Link_Prims;
+list   Link_Prims;
 
-list     Tanuki_Size_List         = [<0.05000,0.05000,0.05000>,<0.32380,0.16658,0.26517>,<0.37500,0.11905,0.26264>];
-
-string   Texture1      = "19f53bd5-b58d-79be-c807-006387cc7031";
-string   Texture2      = "e05f3192-0642-1588-5a3d-2635b48f6e84";
-string   Texture_H1    = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
-string   Texture_H2    = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
-
-key      Owner;
-key      tmp;
-
-integer  Power;
-integer  Title = FALSE;
-
-integer  Random;
-integer  Hanble;
-
-list     Script_List             = ["!0.Control","!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
-list     Script_Reboot_List      = ["!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
-
-list     Menu_List1              = ["リセット","キャンセル","インフォ","自爆","---","---","再起動お知らせ","A.A.S","うんち","電源 ☑","表示項目","スキャン間隔"];
-list     Menu_List2              = ["電源 ☐","電源 ☑"];
-
-list     ScanTime_List           = ["---","キャンセル","---","2秒","5秒","10秒"];
-integer  ScanTime_Num            = 4;
-
-list     Observation_Menu_List1  = ["前回の再起動","SIM内のアバター数","FPS","Time Dilation","現在地のLI","SIM内所有地全体のLI","臨時プリムの数","SL内の太陽状況"];
-list     Observation_Menu_List3;
-list     Observation_Menu_List4  = ["☐","☑"];
-
-list     Reboot_list             = ["登録","キャンセル"];
-
-integer Menu_Toggle1    = FALSE;
-integer BOYOYON_Toggle  = FALSE;
-integer Menu_Mode       = 0;
-integer Wait_mode       = 0;
-integer Menu_Timer      = 60;
-
-integer NumberOfButtonsInTheMenu = 8; //生成されたダイアログメニューに表示されるボタンの数
-
-list    ShortMenuForButtons = []; // このリストでは、現在のダイアログメニューのボタン名を保存します
-integer NumberOfCurrentDialogMenu = 0; //これは、現在のダイアログメニューの「シリアル」番号です
-integer NumberOfDetectedPeople = 0; //検出されたアバター（またはオブジェクト）の数を格納する変数
-integer MaximumNumberOfMenus = 0; //この変数では、Dialogメニューの最大数を確認します
-
-string ListOfItemNamesInStringForm = "";
-//ここには、curentダイアログ・メニューにapeearするアバター（またはオブジェクト）の名前が格納されています
-
-list parsedx = []; //クリックされたボタンの部分
-
-/* list ShortMenuForButtons-を「人間が読める」最良の順序で並べ替えるコード */
-list order_buttons(list buttons) 
-{
-  return llList2List(buttons,-3,-1) + llList2List(buttons,-6,-4) +
-         llList2List(buttons,-9,-7) + llList2List(buttons,-12,-10);
-}
-
-showmenu()
-{   
-  ShortMenuForButtons = [];
-  ListOfItemNamesInStringForm = "";
-
-  integer i = 0;
-  integer bool;
-  
-  do{
-      if (llList2String(Observation_Menu_List1, NumberOfCurrentDialogMenu * NumberOfButtonsInTheMenu + i) != ""){
-        /* メニューボタンの作成 */
-        bool = llList2Integer(Observation_Menu_List3, NumberOfCurrentDialogMenu * NumberOfButtonsInTheMenu + i);
-        ShortMenuForButtons += (string)(NumberOfCurrentDialogMenu * NumberOfButtonsInTheMenu + i + 1) +"/"+ llList2String(Observation_Menu_List4,bool);
-        //ここに、ダイアログメニューに表示されるテキストの "i"項目の名前を追加します
-        ListOfItemNamesInStringForm += "\n" + (string)(NumberOfCurrentDialogMenu * NumberOfButtonsInTheMenu + i + 1) + " " +
-        llList2String(Observation_Menu_List1, NumberOfCurrentDialogMenu * NumberOfButtonsInTheMenu + i);
-      }
-    } 
-    while (i++ < (NumberOfButtonsInTheMenu -1));
-    
-    ShortMenuForButtons += "---"; // 空白埋めのボタン
-    ShortMenuForButtons += "---"; // メニューの左のボタン
-    ShortMenuForButtons += "キャンセル"; // キャンセルボタン
-    ShortMenuForButtons += "---"; // メニューの右のボタン
-
-    llDialog(tmp,"\n表示を切り替えたい項目をお選び下さい\n"+
-                   "現在の設定\n" + 
-                   ListOfItemNamesInStringForm,
-                   order_buttons(ShortMenuForButtons),Random);
-}
-
-/*以下システムメッセージ(テキスト)*/
-info()
-{
-  llSay(0,"\n地域の再起動完了時にIMを受け取れる機能が追加されました！\n" + 
-          "再起動お知らせから登録を押してリストに登録して頂けるとこの地域が再起動した時にIMを受け取れます\n"+
-          "メッセージを受け取った後にリスト情報が破棄される安心仕様です");
-}
-
-reset()
-{
-  llSay(0,"\nソフトリセットボタンが押されました\n" +
-          "設定情報の再読込を行います…");
-  llResetScript();
-}
-
-announce_1()
-{
-  llInstantMessage(tmp,"\n他の人が操作中かキャンセルを押さずに閉じてしまった\n" +
-                       "もしくはラグの為ビジー状態です\n" +
-                       "操作ができるようになるまで少しお待ち下さい");
-}
-
-announce_2()
-{
-  llSay(0,"\n踏みながら操作しないで下さいオナシャス！");
-}
-
-announce_3()
-{
-  llInstantMessage(tmp,"\nたぬき兄貴が踏まれている時にメニューが操作された為処理を中断しました");
-}
-
-announce_4()
-{
-  llInstantMessage(tmp,"\nA.A.S機能が起動中です\n" + 
-                       "機能処理が完了するまでお待ち下さい");
-}
-
-setup()
-{ 
-  if (Title == FALSE){
-    BOYOYON_Toggle = TRUE;
-    CreateIndex();
-   
-    llOwnerSay("テクスチャをデフォルトに置き換え中…"); 
-    llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
-    llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
-    llOwnerSay("コア部分のスクリプトの状態を確認中…");
-    llSleep(0.1);
-    llMessageLinked(LINK_SET,18,"",NULL_KEY);
-    integer i = 0;
-    integer a = llGetListLength(Script_Reboot_List);
-    
-    for (i; i < a ; i++){
-      string b = llList2String(Script_Reboot_List,i);
-      integer c = llGetScriptState(b);
-      if (c == TRUE){
-        llSetScriptState(b,FALSE);
-      }
-    　//ここから他のスクリプトに記録されている情報を渡す 
-      if (i == 2){
-        llSetScriptState(b,TRUE);
-        string temp1 = llDumpList2String(Link_Prims,"/");
-        llSleep(1.0);
-        llMessageLinked(LINK_SET,2,temp1,NULL_KEY);
-      }
-      if (i == 3){
-
-        llSetScriptState(b,TRUE);
-        string temp1 = llDumpList2String(Link_Prims,"/");
-        llSleep(1.0);
-        llMessageLinked(LINK_SET,3,temp1,NULL_KEY);
-      }
-      //ここまで
-    }   
-    llMessageLinked(LINK_SET,19,"",NULL_KEY);
-    llSleep(0.1);
-    llMessageLinked(LINK_SET,20,"",NULL_KEY);
-  }
-}
-
-reset1()
-{
-  llInstantMessage(tmp,"\nメニュー操作が時間切れになりました");
-  llListenRemove(Hanble);
-  llSetTimerEvent(0);
-  Menu_Toggle1 = FALSE;
-}
-
-reset2()
-{
-  llListenRemove(Hanble);
-  llSetTimerEvent(0);
-  Menu_Toggle1 = FALSE;
-}
-
-reset_3()
-{
-  llOwnerSay("リンク変更が行われたためスクリプトをリセットします");
-  llResetScript(); 
-}
+string Texture1   = "19f53bd5-b58d-79be-c807-006387cc7031";
+string Texture2   = "e05f3192-0642-1588-5a3d-2635b48f6e84";
+string Texture_H1 = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string Texture_H2 = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
 
 default
 {
     state_entry()
     {
-      setup();
-    }
-    
-    on_rez(integer start_param)
-    {
-      llResetScript();
-      llMessageLinked(LINK_SET,0,"",NULL_KEY);
-    }
-    
-    collision_start(integer num)
-    { 
-      if (llDetectedType(0) & AGENT && BOYOYON_Toggle == FALSE){
-        llResetOtherScript(llList2String(Script_List,1));
-        llSetScriptState(llList2String(Script_List,1),TRUE);
-        llSleep(0.1);
-        llMessageLinked(LINK_THIS,200,"",NULL_KEY);
-        Wait_mode = 1;
-        state wait;
-      }
-    }
-    
-    touch_start(integer total_number)
-    {　
-      llResetTime(); 
-      if (Menu_Toggle1 == FALSE){
-        Menu_Toggle1 = TRUE;
-        tmp = llDetectedKey(0);
-        Random = llFloor(llFrand(-7000000 - -6000001) + -6000001);
-        Hanble = llListen(Random,"",tmp,"");
-        llDialog(tmp,"操作したい項目をお選び下さい",Menu_List1,Random);
-        llSetTimerEvent(Menu_Timer);
-      }
-      else
-        announce_1();
-    }
-    
-    listen(integer channel,string name, key id, string message)
-    {
-      if (channel == Random && id == tmp){
-        if (message == "---"||message == "キャンセル"){
-          reset2();
-          return;
-        }
-        
-        if (~llListFindList(Menu_List2,(list)message)){
-          if (message == "電源 ☑"){
-            Menu_List1 = llListReplaceList(Menu_List1,["電源 ☐"],llListFindList(Menu_List1,["電源 ☑"]),llListFindList(Menu_List1,["電源 ☑"]));
-            llMessageLinked(LINK_ALL_OTHERS,1,"",NULL_KEY);
-          }
-          else if (message == "電源 ☐"){
-            Menu_List1 = llListReplaceList(Menu_List1,["電源 ☑"],llListFindList(Menu_List1,["電源 ☐"]),llListFindList(Menu_List1,["電源 ☐"]));
-            llMessageLinked(LINK_ALL_OTHERS,1,"",NULL_KEY);
-          }
-          reset2();
-        }
-        
-        if (message == "表示項目")
-          Menu_Mode = 1;
-        else if (message == "スキャン間隔")
-          Menu_Mode = 2;
-    　　 else if (message == "再起動お知らせ")
-          Menu_Mode = 3;
-
-        if (message == "A.A.S"){
-          llSetScriptState(llList2String(Script_List,2),TRUE);
-          llMessageLinked(LINK_THIS,2,"",tmp);
-          Wait_mode = 2;        
-        }      
-        else if (message == "うんち"){
-          llSetScriptState(llList2String(Script_List,1),FALSE);
-          llSetScriptState(llList2String(Script_List,3),TRUE);
-          llMessageLinked(LINK_THIS,110,"",NULL_KEY);
-          Wait_mode = 3;        
-        }
-        else if (message == "自爆"){
-          llSetScriptState(llList2String(Script_List,1),FALSE);
-          llSetScriptState(llList2String(Script_List,4),TRUE);
-          llMessageLinked(LINK_THIS,120,"",NULL_KEY);
-          Wait_mode = 3;        
-        }
-        
-        if (message == "インフォ"){
-          info();
-        }
-        
-        if (message == "リセット"){
-          reset();
-        }
-        
-        if (~llListFindList(Menu_List1,(list)message)){
-          integer index = llListFindList(Menu_List1,(list)message);
-          reset2();
-          
-          if (index == 7|10|11 && Menu_Mode > 0){
-            state menu;
-          }
-          else if (index == 3|6|8 && Wait_mode > 0){
-            state wait;
-          }
-        }
-      }
+      llSetMemoryLimit(llGetUsedMemory() + 1024);
     }
     
     link_message(integer sender_num, integer num, string str, key id)
     {
-      if (num == 11){
-        Menu_Toggle1 = TRUE;
-        Observation_Menu_List3 = [];
-        Observation_Menu_List3 = llParseString2List(str,["*"],[]);
-        Menu_Toggle1 = FALSE;
-      }  
-        
-      if (num == 20){
-        Menu_Toggle1 = TRUE;
-      }
-      if (num == 21){
-        Observation_Menu_List3 = [];
-        Observation_Menu_List3 = llParseString2List(str,["*"],[]);
-        llMessageLinked(LINK_SET,22,"",NULL_KEY);
-      }
-      if (num == 24){
-        ScanTime_Num  = (integer)str;
-        llMessageLinked(LINK_SET,25,"",NULL_KEY);
-      }
-      if (num == 27){    
-        integer use_memory =  llGetUsedMemory();
-        integer free_memory = llGetFreeMemory();
-        llOwnerSay("セーブデータの読み込み完了");
-        llSleep(0.1);
-        llSay(0,"\nたぬき兄貴ペットシステム Ver β\n使用されてるメモリ " + (string)use_memory + "KB" + "\n" +
-            　　 "空きメモリ " + (string)free_memory + "KB");
-        Title = TRUE;
-        BOYOYON_Toggle = FALSE;
-        Menu_Toggle1 = FALSE;
+      if (num == 2){
+        Link_Prims = llParseString2List(str,["/"],[]);
+        llSetScriptState(llGetScriptName(),FALSE);
       }
       
-      if (num == 303){
-        Menu_Toggle1 = FALSE;
-      }
-    }
-    
-    timer()
-    {
-      reset1();
-    }
-    
-    changed(integer change)
-    {
-      if (change & CHANGED_LINK){
-        reset_3();
-      }
-    }
-}
+      if (num == 110){
+       llResetTime();
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       //Texture1 = llGetTexture(1);
+       llSetTexture(Texture2,1);
+      
+       llSay(0,"うんちボタンが押されたけどなんでもな\n(ﾌﾞﾘﾌﾞﾘﾌﾞﾘﾌﾞﾘｭﾘｭﾘｭﾘｭﾘｭﾘｭ！！！！！！ﾌﾞﾂﾁﾁﾌﾞﾌﾞﾌﾞﾁﾁﾁﾁﾌﾞﾘﾘｲﾘﾌﾞﾌﾞﾌﾞﾌﾞｩｩｩｩｯｯｯ");
+             
+       integer i;
+       integer index;
+       integer Drop_int =  (integer)llFrand(50 - 10) + 10;
 
-state menu
-{
-    state_entry()
-    {
-      Hanble = llListen(Random,"",tmp,"");
-      
-      if (Menu_Mode == 1)
-        showmenu();
-      else if (Menu_Mode == 2)
-        llDialog(tmp,"地域情報の取得間隔をお選び下さい\n現在の設定 " + llList2String(ScanTime_List,ScanTime_Num),ScanTime_List,Random);
-      else if(Menu_Mode == 3)
-        llDialog(tmp,"\n登録を押してリストに登録して頂けると\nこの地域が再起動した時にIMを受け取れます\nメッセージを受け取った後にリスト情報が破棄される安心仕様です",Reboot_list,Random);
-      llSetTimerEvent(Menu_Timer);
-    }
-    
-    listen(integer channel,string name, key id, string message)
-    {
-      if (channel == Random && id == tmp){
-          
-        if (message == "---"||message == "キャンセル"){
-          reset2();
-          Menu_Mode = 0;
-          state default;
-          return;
-        }
-        
-        else if (Menu_Mode == 1){
-          parsedx = llParseString2List(message,["/"],[]);
-          integer index1 = llList2Integer(parsedx,0) - 1;
-          string bool = llList2String(parsedx,1);
-
-          if (index1 > -1 && index1 < 8){
-            integer index2 = llListFindList(Observation_Menu_List4,[bool]);
-            llMessageLinked(LINK_ALL_OTHERS,10,(string)index1 + ":" + (string)index2,NULL_KEY);
-          } 
-        }
-        
-        else if (Menu_Mode == 2){
-          ScanTime_Num =  llListFindList(ScanTime_List,(list)message);
-          string m = left(message,"秒");
-          llMessageLinked(LINK_ALL_OTHERS,4,m,NULL_KEY);
-          llMessageLinked(LINK_ALL_OTHERS,6,(string)ScanTime_Num,NULL_KEY);
-        }
-        
-        else if (Menu_Mode == 3){  
-          if (message == "登録"){
-    　　     llMessageLinked(LINK_ALL_OTHERS,300,"",tmp);
-            Menu_Toggle1  = TRUE;
-          }
-        }
-        reset2();
-        Menu_Mode = 0;
-        state default;
-      } 
-    } 
-  
-    timer()
-    {
-      reset1();
-      state default;
-    }
-    
-    changed(integer change)
-    {
-      if (change & CHANGED_LINK){
-        reset_3();
-      }
-    }
-}
-
-state wait
-{
-    state_entry()
-    {
-      if (Wait_mode == 1)
-        Hanble = llListen(Random,"",tmp,"");
-    }
-
-    touch_start(integer total_number)
-    {　
-      if (Wait_mode == 1)    
-　　　　  announce_2();
-      else if (Wait_mode == 2)    
-　　　　  announce_4();
-    }
-    
-    listen(integer channel,string name, key id, string message)
-    {
-      if (channel == Random && id == tmp){
-        announce_3();
-        reset2(); 
-      }
-    }
-    
-    link_message(integer source, integer num, string str, key id)
-    {
-      if (num == 3)
-      {
-        llSetScriptState(llList2String(Script_List,2),FALSE);
-      }
-      
-      if (num == 111)
-      {
-        llSetScriptState(llList2String(Script_List,3),FALSE);
-      }
-      
-      if (num == 121)
-      {
-        llSetScriptState(llList2String(Script_List,4),FALSE);
-      }
-      
-      if (num == 201){
-        llSetScriptState(llList2String(Script_List,1),FALSE);
-        llListenRemove(Hanble);   
-      }
-      
-      if (Wait_mode > 0){
-        Wait_mode = 0;
-        state default;
-      }
-    }
-    
-    changed(integer change)
-    {
-      if (change & CHANGED_LINK){
-        reset_3();
+       for (i=0; i <= Drop_int; i++){
+         if (llGetTime() < 60){
+           index = (integer)llFrand(llGetInventoryNumber(INVENTORY_OBJECT));
+           string object = llGetInventoryName(INVENTORY_OBJECT,index);
+           float MIN  = -2;
+           float MAX  =  2;
+           vector xyz = <llFrand(MAX - MIN) + MIN,llFrand(MAX - MIN) + MIN,llFrand(5 - 3) + 3>;
+           llSleep(0.18);
+           llRezObject(object, llGetPos() + <0.0,0.0,0.6> , xyz , ZERO_ROTATION , 0);
+         }
+         else{
+           llSay(0,"うんちが止まらなくなったので強制終了します" ); 
+           jump loopout; 
+         }
+       }
+       　
+       @loopout;
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       //llSetTexture(Texture1,1);
+       llSleep(0.1);
+       llMessageLinked(LINK_THIS,111,"",NULL_KEY);
       }
     }
 }
