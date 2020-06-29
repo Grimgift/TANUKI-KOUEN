@@ -1,0 +1,118 @@
+
+integer GetIndex(string name)
+{
+  return llListFindList(Link_Prims,(list)name);
+}
+
+list     Link_Prims;
+integer  Timer         = 5;
+
+rotation vrot;
+vector   vRadBase;
+
+string   Texture1      = "19f53bd5-b58d-79be-c807-006387cc7031";
+string   Texture2      = "e05f3192-0642-1588-5a3d-2635b48f6e84";
+string   Texture_H1    = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string   Texture_H2    = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
+
+list     Sentence_list = ["突撃ー！",
+                          "爆発するぞー！",
+                          "俺は攻撃を行う!",
+                          "危ない！",
+                          "大和魂を見せてやる！",
+                          "バンザーイ！"];
+                      
+list     Sound_list    = ["9d2aaeba-73bf-d614-612c-9a3bfbba715a",
+                          "3223c89b-a74b-2083-63c8-945081f7fb66",
+                          "d92e3420-3547-e743-1cd0-925a924a829d",
+                          "5a9441b7-79df-f58f-22b9-1b06edd235e0",
+                          "3899ebfb-0a87-ebfc-8a6c-5c0d0e3d61ec",
+                          "881bb6eb-da4f-c4fd-203e-10198cd29e03"];
+
+Particle()
+{
+  llParticleSystem(
+  [PSYS_SRC_PATTERN,PSYS_SRC_PATTERN_EXPLODE,
+   PSYS_SRC_BURST_RADIUS,0.5,
+   PSYS_SRC_ANGLE_BEGIN,0,
+   PSYS_SRC_ANGLE_END,0,
+   PSYS_SRC_TARGET_KEY,llGetKey(),
+   PSYS_PART_START_COLOR,<1.000000,0.773438,0.546875>,
+   PSYS_PART_END_COLOR,<1.000000,1.000000,1.000000>,
+   PSYS_PART_START_ALPHA,0.5,
+   PSYS_PART_END_ALPHA,1,
+   PSYS_PART_START_GLOW,0.04,
+   PSYS_PART_END_GLOW,0.05,
+   PSYS_PART_BLEND_FUNC_SOURCE,PSYS_PART_BF_SOURCE_ALPHA,
+   PSYS_PART_BLEND_FUNC_DEST,PSYS_PART_BF_ONE_MINUS_SOURCE_ALPHA,
+   PSYS_PART_START_SCALE,<1.900000,2.000000,0.000000>,
+   PSYS_PART_END_SCALE,<0.500000,0.500000,0.000000>,
+   PSYS_SRC_TEXTURE,"",
+   PSYS_SRC_MAX_AGE,0,
+   PSYS_PART_MAX_AGE,3,
+   PSYS_SRC_BURST_RATE,0.5,
+   PSYS_SRC_BURST_PART_COUNT,20,
+   PSYS_SRC_ACCEL,<0.000000,0.000000,0.000000>,
+   PSYS_SRC_OMEGA,<1.000000,1.000000,1.000000>,
+   PSYS_SRC_BURST_SPEED_MIN,2,
+   PSYS_SRC_BURST_SPEED_MAX,2,
+   PSYS_PART_FLAGS,0 | PSYS_PART_BOUNCE_MASK]);
+}
+
+default
+{
+    state_entry()
+    {
+      llSetMemoryLimit(llGetUsedMemory() + 1024);
+    }
+    
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      if (num == 3){
+        Link_Prims = llParseString2List(str,["/"],[]);
+        llSetScriptState(llGetScriptName(),FALSE);
+      }
+      
+      else if (num == 120){
+        vRadBase = llRot2Euler(llGetRot());
+
+        integer Random = llRound(llFrand(2));
+        
+        llSay(0,llList2String(Sentence_list,Random));
+        llTriggerSound(llList2String(Sound_list,Random),1.0);
+        llPreloadSound("78524b77-2038-a1a0-5882-dc40bb07d17f");
+        llPreloadSound("ffb32a2e-d0f1-62d1-cf20-6118f05511ac"); 
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+        llSetRot(llEuler2Rot( <0.0,0.0,vRadBase.z>));
+        llTargetOmega(<0,0,5>,5,1);
+        llTriggerSound("78524b77-2038-a1a0-5882-dc40bb07d17f",1.0);
+        llSleep(2.5);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+        llTargetOmega(<0,0,0>,0,0);
+        llTriggerSound("ffb32a2e-d0f1-62d1-cf20-6118f05511ac",1.0);
+        llSetLinkPrimitiveParams(LINK_SET,
+                                 [PRIM_POINT_LIGHT,TRUE,<1.0,1.0,1.0>,1.0,3.0,0.75,
+                                  PRIM_GLOW, ALL_SIDES,1.0,
+                                  PRIM_COLOR,ALL_SIDES,<0.5,0.5,0.5>,1.0]);
+        Particle();
+        llSleep(5.3);
+        llParticleSystem([]);
+        llSetLinkPrimitiveParams(LINK_SET,
+                                 [PRIM_POINT_LIGHT, FALSE,<0.0,0.0,0.0>,0.0,0.0,0.0,
+                                  PRIM_GLOW, ALL_SIDES,0.0,
+                                  PRIM_FULLBRIGHT,ALL_SIDES,FALSE]);
+        llSetTimerEvent(Timer);       
+      }
+    }
+    
+    timer()
+    {
+      llSetLinkPrimitiveParams(LINK_SET,[PRIM_COLOR,ALL_SIDES,<1.0,1.0,1.0>,1.0,
+                                         PRIM_FULLBRIGHT,ALL_SIDES,TRUE]);
+      llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+      llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+      llSetRot(llEuler2Rot(vRadBase)); 
+      llSetTimerEvent(0);
+      llMessageLinked(LINK_THIS,121,"",NULL_KEY);    
+    }
+}
