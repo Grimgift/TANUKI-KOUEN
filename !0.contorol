@@ -1,4 +1,6 @@
 
+
+/*仕切りが入った文章の左側を抽出する関数*/
 string left(string src, string divider)
 {
   integer index = llSubStringIndex(src,divider);
@@ -15,29 +17,54 @@ string right(string src, string divider)
   return src;
 }
 
-key     Owner;
-key     tmp;
+CreateIndex()
+{
+  integer i;
+  Link_Prims = ["root"];
+  integer nop = llGetNumberOfPrims();
+  for (i = 1; i <= nop; i++){
+    string linkPrim = llGetLinkName(i);
+    Link_Prims += [linkPrim];
+  }
+}
 
-integer Power;
-integer Title = FALSE;
+integer GetIndex(string name)
+{
+  return llListFindList(Link_Prims,(list)name);
+}
 
-integer Random;
-integer Hanble;
+list     Link_Prims;
 
-list    Script_List             = ["!0.Control","!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
-list    Script_Reboot_List      = ["!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
+list     Tanuki_Size_List         = [<0.05000,0.05000,0.05000>,<0.32380,0.16658,0.26517>,<0.37500,0.11905,0.26264>];
 
-list    Menu_List1              = ["リセット","キャンセル","インフォ","自爆","---","---","再起動お知らせ","A.A.S","うんち","電源 ☑","表示項目","スキャン間隔"];
-list    Menu_List2              = ["電源 ☐","電源 ☑"];
+string   Texture1      = "19f53bd5-b58d-79be-c807-006387cc7031";
+string   Texture2      = "e05f3192-0642-1588-5a3d-2635b48f6e84";
+string   Texture_H1    = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string   Texture_H2    = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
 
-list    ScanTime_List           = ["---","キャンセル","---","2秒","5秒","10秒"];
-integer ScanTime_Num            = 4;
+key      Owner;
+key      tmp;
 
-list    Observation_Menu_List1  = ["前回の再起動","SIM内のアバター数","FPS","Time Dilation","現在地のLI","SIM内所有地全体のLI","臨時プリムの数","SL内の太陽状況"];
-list    Observation_Menu_List3;
-list    Observation_Menu_List4  = ["☐","☑"];
+integer  Power;
+integer  Title = FALSE;
 
-list    Reboot_list             = ["登録","キャンセル"];
+integer  Random;
+integer  Hanble;
+
+list     Script_List             = ["!0.Control","!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
+list     Script_Reboot_List      = ["!1.BOYOYON_1","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
+
+list     Menu_List1              = ["リセット","キャンセル","インフォ","自爆","---","---","再起動お知らせ","A.A.S","うんち","電源 ☑","表示項目","スキャン間隔"];
+list     Menu_List2              = ["電源 ☐","電源 ☑"];
+
+list     ScanTime_List           = ["---","キャンセル","---","2秒","5秒","10秒"];
+integer  ScanTime_Num            = 4;
+
+list     Observation_Menu_List1  = ["前回の再起動","SIM内のアバター数","FPS","Time Dilation","現在地のLI","SIM内所有地全体のLI","臨時プリムの数","SL内の太陽状況"];
+list     Observation_Menu_List3;
+list     Observation_Menu_List4  = ["☐","☑"];
+
+list     Reboot_list             = ["登録","キャンセル"];
 
 integer Menu_Toggle1    = FALSE;
 integer BOYOYON_Toggle  = FALSE;
@@ -95,6 +122,7 @@ showmenu()
                    order_buttons(ShortMenuForButtons),Random);
 }
 
+/*以下システムメッセージ(テキスト)*/
 info()
 {
   llSay(0,"\n地域の再起動完了時にIMを受け取れる機能が追加されました！\n" + 
@@ -136,8 +164,13 @@ setup()
 { 
   if (Title == FALSE){
     BOYOYON_Toggle = TRUE;
-    
-    llOwnerSay("ボディのスクリプトの状態を確認中…");
+    CreateIndex();
+   
+    llOwnerSay("テクスチャをデフォルトに置き換え中…"); 
+    llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+    llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+    llOwnerSay("コア部分のスクリプトの状態を確認中…");
+    llSleep(0.1);
     llMessageLinked(LINK_SET,18,"",NULL_KEY);
     integer i = 0;
     integer a = llGetListLength(Script_Reboot_List);
@@ -148,8 +181,22 @@ setup()
       if (c == TRUE){
         llSetScriptState(b,FALSE);
       }
-    }
-    
+    　//ここから他のスクリプトに記録されている情報を渡す 
+      if (i == 2){
+        llSetScriptState(b,TRUE);
+        string temp1 = llDumpList2String(Link_Prims,"/");
+        llSleep(1.0);
+        llMessageLinked(LINK_SET,2,temp1,NULL_KEY);
+      }
+      if (i == 3){
+
+        llSetScriptState(b,TRUE);
+        string temp1 = llDumpList2String(Link_Prims,"/");
+        llSleep(1.0);
+        llMessageLinked(LINK_SET,3,temp1,NULL_KEY);
+      }
+      //ここまで
+    }   
     llMessageLinked(LINK_SET,19,"",NULL_KEY);
     llSleep(0.1);
     llMessageLinked(LINK_SET,20,"",NULL_KEY);
@@ -171,6 +218,12 @@ reset2()
   Menu_Toggle1 = FALSE;
 }
 
+reset_3()
+{
+  llOwnerSay("リンク変更が行われたためスクリプトをリセットします");
+  llResetScript(); 
+}
+
 default
 {
     state_entry()
@@ -187,6 +240,7 @@ default
     collision_start(integer num)
     { 
       if (llDetectedType(0) & AGENT && BOYOYON_Toggle == FALSE){
+        llResetOtherScript(llList2String(Script_List,1));
         llSetScriptState(llList2String(Script_List,1),TRUE);
         llSleep(0.1);
         llMessageLinked(LINK_THIS,200,"",NULL_KEY);
@@ -304,7 +358,7 @@ default
         llOwnerSay("セーブデータの読み込み完了");
         llSleep(0.1);
         llSay(0,"\nたぬき兄貴ペットシステム Ver β\n使用されてるメモリ " + (string)use_memory + "KB" + "\n" +
-            　　 "空きメモリは " + (string)free_memory + " KB あります");
+            　　 "空きメモリ " + (string)free_memory + "KB");
         Title = TRUE;
         BOYOYON_Toggle = FALSE;
         Menu_Toggle1 = FALSE;
@@ -318,6 +372,13 @@ default
     timer()
     {
       reset1();
+    }
+    
+    changed(integer change)
+    {
+      if (change & CHANGED_LINK){
+        reset_3();
+      }
     }
 }
 
@@ -382,6 +443,13 @@ state menu
       reset1();
       state default;
     }
+    
+    changed(integer change)
+    {
+      if (change & CHANGED_LINK){
+        reset_3();
+      }
+    }
 }
 
 state wait
@@ -433,6 +501,13 @@ state wait
       if (Wait_mode > 0){
         Wait_mode = 0;
         state default;
+      }
+    }
+    
+    changed(integer change)
+    {
+      if (change & CHANGED_LINK){
+        reset_3();
       }
     }
 }
