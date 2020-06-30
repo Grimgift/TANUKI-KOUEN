@@ -68,8 +68,10 @@ default
     
     link_message(integer sender_num, integer num, string str, key id)
     {
-      if (num == 3){
+      if (num == 402){
         Link_Prims = llParseString2List(str,["/"],[]);
+        llSetMemoryLimit(llGetUsedMemory() + 1024);
+        llSleep(0.1);
         llSetScriptState(llGetScriptName(),FALSE);
       }
       
