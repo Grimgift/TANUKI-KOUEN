@@ -1,8 +1,41 @@
-vector vpos;
-vector scale;
+
+string left(string src, string divider)
+{
+  integer index = llSubStringIndex(src,divider);
+  if (~index)
+    return llDeleteSubString(src,index,-1);
+  return src;
+}
+
+
+string right(string src, string divider)
+{
+  integer index = llSubStringIndex(src,divider);
+  if　(~index)
+    return llDeleteSubString(src,0,index + llStringLength(divider) - 1);
+  return src;
+}
+
+integer GetIndex(string name)
+{
+  return llListFindList(Link_Prims,(list)name);
+}
+
+list    Link_Prims;
+list    Tanuki_Size_List;
+
+vector  vpos;
+vector  scale;
+vector  vpos_Head;
+vector  scale_Core;
+vector  scale_Head;
+vector  scale_Body;
 
 integer Ti = FALSE;
-float   CT = 1.0; 
+float   CT = 1.0;
+
+string  Texture_H1    = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string  Texture_H2    = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
 
 default
 { 
@@ -13,31 +46,47 @@ default
        
     link_message(integer sender_num, integer num, string str, key id)
     {
-       if (num == 200){
-         vpos = llGetPos();
-         scale = llGetScale();
-        
-         llMessageLinked(LINK_ALL_OTHERS,210,"",NULL_KEY);
-         llSleep(0.1);
-         llTriggerSound(llGetInventoryName(INVENTORY_SOUND,llFloor(llFrand(llGetInventoryNumber(INVENTORY_SOUND)))),0.2);
-         llSetLinkPrimitiveParamsFast(LINK_THIS,[PRIM_SIZE, <scale.x,scale.y,scale.z / 2>]);
-         llMessageLinked(LINK_ALL_OTHERS,211,"",NULL_KEY);
-         llSetPos(vpos - <0.0,0.0,scale.z * 0.25>);
-       }
-   }
+      if (num == 400){
+        Link_Prims = llParseString2List(left(str,":"),["/"],[]);
+        Tanuki_Size_List = llParseString2List(right(str,":"),["/"],[]);
+        scale_Head = (vector)llList2String(Tanuki_Size_List,1);
+        scale_Body = (vector)llList2String(Tanuki_Size_List,2);
+        llSetMemoryLimit(llGetUsedMemory() + 1024);
+        llSleep(0.1);
+        llSetScriptState(llGetScriptName(),FALSE);
+      }
+       
+      if (num == 200){
+        llSetLinkAlpha(GetIndex("TANUKI"),0.0,ALL_SIDES);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+        vpos = llGetPos();
+        list temp = llGetLinkPrimitiveParams(GetIndex("TANUKI HEAD"),[PRIM_POS_LOCAL]);
+        vpos_Head = (vector)llList2String(temp,0);
+        llSleep(0.1);
+        llTriggerSound(llGetInventoryName(INVENTORY_SOUND,llFloor(llFrand(llGetInventoryNumber(INVENTORY_SOUND)))),0.2);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_POSITION, <vpos_Head.x,vpos_Head.y,vpos_Head.z / 2>]);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_SIZE, <scale_Head.x,scale_Head.y,scale_Head.z / 2>]);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_SIZE, <scale_Body.x,scale_Body.y,scale_Body.z / 2>]);
+        llSetPos(vpos - <0.0,0.0,scale_Body.z * 0.25>);
+      }
+    }
    
-   collision_end(integer total_number)
-   {
-     if (llDetectedType(0) & AGENT){
-       llSleep(CT);  
-       llMessageLinked(LINK_ALL_OTHERS,212,"",NULL_KEY);
-       llSetLinkPrimitiveParamsFast(LINK_THIS,[PRIM_SIZE,scale]);
-       llSetPos(vpos);
-     } 
-   }
+    collision_end(integer total_number)
+    {
+      if (llDetectedType(0) & AGENT){
+        llSleep(CT);  
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_SIZE,scale_Head]);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_POSITION, vpos_Head]);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_SIZE,scale_Body]);
+        llSetPos(vpos);
+        llSetLinkAlpha(GetIndex("TANUKI"),1.0,ALL_SIDES);
+        llMessageLinked(LINK_THIS,201,"",NULL_KEY);
+      } 
+    }
     
-   timer()
-   {
-     llSetTimerEvent(0);
-   }
+    timer()
+    {
+      llSetTimerEvent(0);
+    }
 }
