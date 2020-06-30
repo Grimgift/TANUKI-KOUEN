@@ -1,5 +1,12 @@
 
-string Texture1;
+integer GetIndex(string name)
+{
+  return llListFindList(Link_Prims,(list)name);
+}
+
+list   Link_Prims;
+
+string Texture1   = "19f53bd5-b58d-79be-c807-006387cc7031";
 string Texture2   = "e05f3192-0642-1588-5a3d-2635b48f6e84";
 string Texture_H1 = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
 string Texture_H2 = "d4f93196-5565-4a75-ad56-e54c7e596fc0";
@@ -13,10 +20,18 @@ default
     
     link_message(integer sender_num, integer num, string str, key id)
     {
-      llResetTime();
+      if (num == 401){
+        Link_Prims = llParseString2List(str,["/"],[]);
+        llSetMemoryLimit(llGetUsedMemory() + 1024);
+        llSleep(0.1);
+        llSetScriptState(llGetScriptName(),FALSE);
+      }
+      
       if (num == 110){
-       llSetLinkPrimitiveParamsFast(3,[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
-       Texture1 = llGetTexture(1);
+       llResetTime();
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture2,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       //Texture1 = llGetTexture(1);
        llSetTexture(Texture2,1);
       
        llSay(0,"うんちボタンが押されたけどなんでもな\n(ﾌﾞﾘﾌﾞﾘﾌﾞﾘﾌﾞﾘｭﾘｭﾘｭﾘｭﾘｭﾘｭ！！！！！！ﾌﾞﾂﾁﾁﾌﾞﾌﾞﾌﾞﾁﾁﾁﾁﾌﾞﾘﾘｲﾘﾌﾞﾌﾞﾌﾞﾌﾞｩｩｩｩｯｯｯ");
@@ -42,8 +57,9 @@ default
        }
        　
        @loopout;
-       llSetLinkPrimitiveParamsFast(3,[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
-       llSetTexture(Texture1,1);
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
+       //llSetTexture(Texture1,1);
        llSleep(0.1);
        llMessageLinked(LINK_THIS,111,"",NULL_KEY);
       }
