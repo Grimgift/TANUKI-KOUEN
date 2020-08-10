@@ -1,0 +1,133 @@
+
+key     Owner;
+key     tmp;
+
+list    Region_Name_list = [];
+list    Date_list = [];
+
+string  TANUKI_Name = "TANUKI";
+
+string  Default_Head_Texture = "b65a785a-d1df-5ed3-88b4-eef2be75b874";
+string  Default_Body_Texture = "19f53bd5-b58d-79be-c807-006387cc7031";
+
+integer ScanTime_Num = 4;
+integer Timer_Count = 5;
+
+string  Region_Name;
+
+list    Observation_Tex_Frag = ["1","1","1","1","1","1","1","1"];
+
+OwnerSayTo(string text)
+{
+  llRegionSayTo(Owner,0,text);
+}
+
+default
+{
+    state_entry()
+    {
+      Owner = llGetOwner();
+      OwnerSayTo("セーブデータの初期化完了…");
+    }
+    
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      if (num == 4){
+        Timer_Count = (integer)str;
+        if (Timer_Count < 2){
+          Timer_Count = 2;
+          llMessageLinked(LINK_SET,5,(string)Timer_Count,NULL_KEY);
+        }
+      }
+       
+      if (num == 6){
+        ScanTime_Num = (integer)str;
+        if (ScanTime_Num == -1)
+          ScanTime_Num = 4;
+        }
+       
+      if (num == 7){
+        Region_Name = str;
+      }
+      
+      if (num == 10){
+        list Observation_parts = llParseString2List(str,[":"],[]);
+        integer a = llList2Integer(Observation_parts,0);
+        integer b = !llList2Integer(Observation_parts,1);
+        Observation_Tex_Frag = llListReplaceList(Observation_Tex_Frag,(list)b, a,a);
+        llSleep(1.0);
+        llMessageLinked(LINK_SET,11,llDumpList2String(Observation_Tex_Frag,"*"),NULL_KEY);
+      }
+      
+      if (num == 21){
+        OwnerSayTo("セーブデータの読み込み開始…");
+        llSleep(0.1);
+        OwnerSayTo("地域観測の情報表示設定を読み込み中…");
+        llSleep(0.1);
+        llMessageLinked(LINK_SET,22,llDumpList2String(Observation_Tex_Frag,"*"),NULL_KEY); //コアスクリプトへ
+      }
+      
+      if (num == 23){
+        llMessageLinked(LINK_SET,24,llDumpList2String(Observation_Tex_Frag,"*"),NULL_KEY); //観測スクリプトへ
+      }
+      
+      if (num == 26){
+        ScanTime_Num  = (integer)str;
+        llMessageLinked(LINK_SET,27,(string)ScanTime_Num,NULL_KEY); //コアスクリプトへ
+      }
+      
+      if (num == 28){
+        OwnerSayTo("地域観測の情報更新間隔を読み込み中…");
+        llSleep(0.1);
+        llMessageLinked(LINK_SET,29,(string)Timer_Count,NULL_KEY); //観測スクリプトへ
+      }
+      
+      if (num == 30){
+        Region_Name = llGetRegionName();
+        integer a = llListFindList(Region_Name_list,(list)Region_Name);
+        OwnerSayTo("この地域の前回の再起動記録を読み込み中… ");
+        llSleep(0.1);
+        if (a == -1){
+          llMessageLinked(LINK_SET,31,"",NULL_KEY);
+        }
+        else{
+          string b = llList2String(Date_list,a);
+          llMessageLinked(LINK_SET,31,b,NULL_KEY);
+        }
+      }
+      
+      if (num == 2000){
+        list Date_parts = llParseString2List(str,["/"],[]);
+        string a = llList2String(Date_parts,0);
+        string b = llList2String(Date_parts,1);
+        
+        if　(~llListFindList(Region_Name_list,(list)a)){
+          integer i = llListFindList(Region_Name_list,(list)a);
+          Date_list = llListReplaceList(Date_list,(list)b, i,i);
+          integer use_memory =  llGetUsedMemory();
+          integer free_memory = llGetFreeMemory();
+          llOwnerSay("使用されてるメモリ " + (string)use_memory + "KB" + "\n" +
+            　　      "空きメモリは " + (string)free_memory + " KB あります");
+        }
+        else{
+          Region_Name_list += a;
+          Date_list += b;
+        }
+      }
+      
+      if (num == 2001){
+        integer i = llListFindList(Region_Name_list,(list)str);
+        string Date = llList2String(Date_list,i);
+        llMessageLinked(LINK_SET,32,Date,NULL_KEY);
+      }  
+    }
+    
+    changed(integer change)
+    {
+      if (change & CHANGED_OWNER){
+        llOwnerSay("オーナーが変更されたためセーブデータを初期化しています…");
+        llSleep(0.1);
+        llResetScript();
+      }
+    }
+}
