@@ -30,9 +30,13 @@ default
     
     changed(integer change)
     {
+      if (change & CHANGED_OWNER){
+        llResetScript();
+      }
+      
       if (change & CHANGED_REGION_START){
         string  Region_Name = llGetRegionName();
-
+      
         integer a;
         integer b = llGetListLength(Reboot_AVkey_list);
         for (a = 0 ; a < b ; a++){
