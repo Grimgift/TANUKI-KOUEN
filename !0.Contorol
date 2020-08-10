@@ -1,4 +1,8 @@
 
+OwnerSayTo(string text)
+{
+  llRegionSayTo(Owner,0,text);
+}
 
 /*仕切り文字付きの入った文章の左側を抽出する関数*/
 string left(string src, string divider)
@@ -53,7 +57,7 @@ integer  Title = FALSE;
 integer  Random;
 integer  Hanble;
 
-list     Script_List             = ["!0.Control","!1.BOYOYON","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
+list     Script_List             = ["!0.Control","!1.BOYOYON","!2.(A.A.S)","!3.Unti","!4.Jibaku","!5.Reboot_Notice"];
 list     Script_Reboot_List      = ["!1.BOYOYON","!2.(A.A.S)","!3.Unti","!4.Jibaku"];
 
 list     Menu_List1              = ["リセット","キャンセル","インフォ","自爆","---","---","再起動お知らせ","A.A.S","うんち","電源 ☑","表示項目","スキャン間隔"];
@@ -128,7 +132,7 @@ showmenu()
 info()
 {
   llSay(0,"\n今回のビルドで以前と同様の機能で動作するようになったと思われます\n" + 
-          "ただしスクリプトの実行状態を起動命令時に操作する使用のため依然としてラグには弱いかもしれません\n"+
+          "ただしスクリプトの実行状態を起動命令時に操作する仕様のため依然としてラグには弱いかもしれません\n"+
           "動作がおかしくなってるときはまずリセットボタンを押してみてください");
 }
 
@@ -165,6 +169,7 @@ announce_4()
 setup()
 { 
   if (Title == FALSE){
+    Owner = llGetOwner();
     BOYOYON_Toggle = TRUE;
     CreateIndex();
 
@@ -172,11 +177,11 @@ setup()
     string temp2 = llDumpList2String(Tanuki_Size_List,"/");
     string temp3 = temp1 + ":" + temp2;
    
-    llOwnerSay("テクスチャをデフォルトに置き換え中…");
+    OwnerSayTo("テクスチャをデフォルトに置き換え中…");
     llSleep(0.1);
     llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_TEXTURE,ALL_SIDES,Texture1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
     llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXTURE,ALL_SIDES,Texture_H1,<1.0, 1.0, 0.0>,<0.0, 0.0, 0.0>,0.0]);
-    llOwnerSay("オブジェクトのサイズと位置をデフォルト値に設定中…");
+    OwnerSayTo("オブジェクトのサイズと位置をデフォルト値に設定中…");
     llSleep(0.1);
     vector scale_core = llList2Vector(Tanuki_Size_List,0);
     vector scale_head = llList2Vector(Tanuki_Size_List,1);
@@ -185,13 +190,12 @@ setup()
     llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_SIZE,scale_head]);
     llSetLinkPrimitiveParamsFast(GetIndex("TANUKI BODY"),[PRIM_SIZE,scale_body]);
     llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_POSITION, vpos_Head]);
-    llOwnerSay("コア部分のスクリプトの状態を確認中…");
+    OwnerSayTo("コア部分のスクリプトの状態を確認中…");
     llSleep(0.1);
-    llMessageLinked(LINK_SET,18,"",NULL_KEY);
     integer i = 0;
     integer a = llGetListLength(Script_Reboot_List);
-    
-    llOwnerSay("サブスクリプトに情報を書き込み中…");
+    llSleep(0.1);
+    OwnerSayTo("サブスクリプトに情報を書き込み中…");
     //非実行中になっているべきサブスクリプトが実行中になっている場合には非実行中にする
     for (i; i < a ; i++){
       string b = llList2String(Script_Reboot_List,i);
@@ -221,15 +225,13 @@ setup()
       }
       //ここまで
     }   
-    llMessageLinked(LINK_SET,19,"",NULL_KEY);
-    llSleep(0.1);
-    llMessageLinked(LINK_SET,20,"",NULL_KEY);
+    llMessageLinked(LINK_SET,19,"",NULL_KEY); //観測スクリプトをリセット
   }
 }
 
 reset1()
 {
-  llInstantMessage(tmp,"\nメニュー操作が時間切れになりました");
+  llRegionSayTo(tmp,0,"\nメニュー操作が時間切れになりました");
   llListenRemove(Hanble);
   llSetTimerEvent(0);
   Menu_Toggle1 = FALSE;
@@ -244,8 +246,8 @@ reset2()
 
 reset_3()
 {
-  llOwnerSay("リンク変更が行われたためスクリプトをリセットします");
-  llResetScript(); 
+  llRegionSayTo(Owner,0,"リンク変更が行われたためスクリプトをリセットします");
+  llResetScript();
 }
 
 default
@@ -298,11 +300,11 @@ default
         if (~llListFindList(Menu_List2,(list)message)){
           if (message == "電源 ☑"){
             Menu_List1 = llListReplaceList(Menu_List1,["電源 ☐"],llListFindList(Menu_List1,["電源 ☑"]),llListFindList(Menu_List1,["電源 ☑"]));
-            llMessageLinked(LINK_ALL_OTHERS,1,"",NULL_KEY);
+            llMessageLinked(LINK_SET,1,"",NULL_KEY);
           }
           else if (message == "電源 ☐"){
             Menu_List1 = llListReplaceList(Menu_List1,["電源 ☑"],llListFindList(Menu_List1,["電源 ☐"]),llListFindList(Menu_List1,["電源 ☐"]));
-            llMessageLinked(LINK_ALL_OTHERS,1,"",NULL_KEY);
+            llMessageLinked(LINK_SET,1,"",NULL_KEY);
           }
           reset2();
         }
@@ -316,18 +318,21 @@ default
 
         if (message == "A.A.S"){
           llSetScriptState(llList2String(Script_List,2),TRUE);
+          llSleep(0.1);
           llMessageLinked(LINK_THIS,2,"",tmp);
           Wait_mode = 2;        
         }      
         else if (message == "うんち"){
           llSetScriptState(llList2String(Script_List,1),FALSE);
           llSetScriptState(llList2String(Script_List,3),TRUE);
+          llSleep(0.1);
           llMessageLinked(LINK_THIS,110,"",NULL_KEY);
           Wait_mode = 3;        
         }
         else if (message == "自爆"){
           llSetScriptState(llList2String(Script_List,1),FALSE);
           llSetScriptState(llList2String(Script_List,4),TRUE);
+          llSleep(0.1);
           llMessageLinked(LINK_THIS,120,"",NULL_KEY);
           Wait_mode = 3;        
         }
@@ -359,35 +364,45 @@ default
       if (num == 11){
         Menu_Toggle1 = TRUE;
         Observation_Menu_List3 = [];
+        llSleep(0.1);
         Observation_Menu_List3 = llParseString2List(str,["*"],[]);
         Menu_Toggle1 = FALSE;
       }  
         
       if (num == 20){
         Menu_Toggle1 = TRUE;
+        llMessageLinked(LINK_SET,21,"",NULL_KEY); //セーブデータスクリプトへ
       }
-      if (num == 21){
+      
+      if (num == 22){
         Observation_Menu_List3 = [];
+        llSleep(0.1);
         Observation_Menu_List3 = llParseString2List(str,["*"],[]);
-        llMessageLinked(LINK_SET,22,"",NULL_KEY);
+        llMessageLinked(LINK_SET,23,"",NULL_KEY); //セーブデータスクリプトへ
       }
-      if (num == 24){
+      
+      if (num == 25){
+        llMessageLinked(LINK_SET,26,"",NULL_KEY); //セーブデータスクリプトへ
+      }
+      
+      if (num == 27){
         ScanTime_Num  = (integer)str;
-        llMessageLinked(LINK_SET,25,"",NULL_KEY);
+        llMessageLinked(LINK_SET,28,"",NULL_KEY); //セーブデータスクリプトへ
       }
-      if (num == 27){    
+      
+      if (num == 32){
         integer use_memory =  llGetUsedMemory();
         integer free_memory = llGetFreeMemory();
-        llOwnerSay("セーブデータの読み込み完了");
+        OwnerSayTo("セーブデータの読み込み完了");
         llSleep(0.1);
-        llSay(0,"\nたぬき兄貴ペットシステム Ver β\n使用されてるメモリ " + (string)use_memory + "KB" + "\n" +
-            　　 "空きメモリ " + (string)free_memory + "KB");
+        OwnerSayTo("\nたぬき兄貴ペットシステム Ver β\n使用されてるメモリ " + (string)use_memory + "KB" + "\n" +
+            　　    "空きメモリ " + (string)free_memory + "KB");
         Title = TRUE;
         BOYOYON_Toggle = FALSE;
         Menu_Toggle1 = FALSE;
       }
       
-      if (num == 303){
+      if (num == 301){
         Menu_Toggle1 = FALSE;
       }
     }
@@ -402,6 +417,8 @@ default
       if (change & CHANGED_LINK){
         reset_3();
       }
+      if (change & CHANGED_REGION_START)
+        llResetScript(); 
     }
 }
 
@@ -438,20 +455,20 @@ state menu
 
           if (index1 > -1 && index1 < 8){
             integer index2 = llListFindList(Observation_Menu_List4,[bool]);
-            llMessageLinked(LINK_ALL_OTHERS,10,(string)index1 + ":" + (string)index2,NULL_KEY);
+            llMessageLinked(LINK_THIS,10,(string)index1 + ":" + (string)index2,NULL_KEY);
           } 
         }
         
         else if (Menu_Mode == 2){
           ScanTime_Num =  llListFindList(ScanTime_List,(list)message);
           string m = left(message,"秒");
-          llMessageLinked(LINK_ALL_OTHERS,4,m,NULL_KEY);
-          llMessageLinked(LINK_ALL_OTHERS,6,(string)ScanTime_Num,NULL_KEY);
+          llMessageLinked(LINK_THIS,4,m,NULL_KEY);
+          llMessageLinked(LINK_THIS,6,(string)ScanTime_Num,NULL_KEY);
         }
         
-        else if (Menu_Mode == 3){  
+        else if (Menu_Mode == 3){
           if (message == "登録"){
-    　　     llMessageLinked(LINK_ALL_OTHERS,300,"",tmp);
+    　　     llMessageLinked(LINK_THIS,300,"",tmp);
             Menu_Toggle1  = TRUE;
           }
         }
@@ -472,6 +489,8 @@ state menu
       if (change & CHANGED_LINK){
         reset_3();
       }
+      if (change & CHANGED_REGION_START)
+        llResetScript(); 
     }
 }
 
@@ -503,6 +522,7 @@ state wait
     {
       if (num == 3)
       {
+        llSleep(2.0);
         llSetScriptState(llList2String(Script_List,2),FALSE);
       }
       
@@ -519,6 +539,7 @@ state wait
       if (num == 201){
         llSetScriptState(llList2String(Script_List,1),FALSE);
         llListenRemove(Hanble);
+        llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_POSITION,vpos_Head]);
         BOYOYON_Toggle = FALSE;
       }
       
@@ -533,5 +554,7 @@ state wait
       if (change & CHANGED_LINK){
         reset_3();
       }
+      if (change & CHANGED_REGION_START)
+        llResetScript();
     }
 }
