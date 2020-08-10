@@ -1,0 +1,322 @@
+
+key     Owner;
+
+integer Power;
+
+integer Timer_Count;
+
+string  Region_Name;
+string  SIM_Time;
+
+string  Date;
+integer SetupF = FALSE;
+integer Announce1 = FALSE;
+
+list    Observation_Tex_Frag;
+
+float Round(float val){
+  return llRound(val / 0.01) * 0.01;
+}
+
+integer year;
+integer month;
+integer day;
+integer hours;
+integer minutes;
+integer seconds;
+string  week_day;
+list    week_days = ["日","月","火","水","木","金","土"];
+string  Timestamp;
+
+// うるう年かどうか調べる関数
+integer is_leap_yearis_leap_year(integer year)  
+{     
+  if (year % 4)        return FALSE;   // 何があってもうるう年ではない
+  if (year <= 1582)    return TRUE;    // ユリウス暦で 1582 年 2 月 24 日より前は、全ての 4 の倍数の年はうるう年であった
+  if (!(year % 400))   return TRUE;    // 閏世紀 は 400 で割り切れるうるう年
+  if (!(year % 100))   return FALSE;   // 2 世紀に 1 回はうるう年でない
+  return TRUE;                        // 4 で割り切れて世紀の区切りでなくユリウス暦でない場合、うるう年
+}
+
+//日本の日付時刻に変換する関数
+JPdate_time()
+{ 
+  string  dateUTC = llGetTimestamp();
+  integer UCT = 9;
+  
+  seconds = (integer)llGetSubString(dateUTC,17,18);
+  minutes = (integer)llGetSubString(dateUTC,14,15);
+  hours =   (integer)llGetSubString(dateUTC,11,12) + UCT;
+  day =     (integer)llGetSubString(dateUTC,8,9);
+  month =   (integer)llGetSubString(dateUTC,5,6); 
+  year =    (integer)llGetSubString(dateUTC,0,3);
+  
+  if (hours >= 24){
+    hours = hours % 24; // 時差
+    day ++; //日付が翌日になる
+     
+    if (month == 1|3|5|7|8|10 && day >= 32){
+      day = day % 31;
+   　　month ++;
+    }
+    if (month == 4|6|9|11 && day >= 31){
+      day = day % 30;
+      month ++;
+    }
+    if (month == 12 && day >= 32){
+      day = day % 31;
+      month ++;
+      month = month % 12;
+      year ++;
+    }
+      
+    if (month == 2){
+      if (is_leap_yearis_leap_year(year)  == TRUE && day >= 30){
+        day = day % 29;
+        month ++;
+      }
+      else if (is_leap_yearis_leap_year(year) == FALSE && day >= 29){
+        day = day % 28;
+        month ++;
+      } 
+    }
+  } 
+}
+
+// 曜日を求める関数
+integer week_day_num(integer year,integer month,integer day)
+{
+  integer i_year = year;
+  integer i_month = month;
+  integer i_day = day;
+  float f_week_day;
+    
+    if (i_month ==1){
+      i_month += 12;
+      i_year --;
+    }
+     else if (i_month == 2){
+       i_year --;   
+       if (day==29 && is_leap_yearis_leap_year(i_year) == FALSE){
+    　    i_day = 28;
+       }
+       i_month += 12; 
+     }
+        
+    i_year = i_year + llFloor(i_year / 4) - llFloor(i_year / 100)+ llFloor(i_year / 400);
+    i_month = llFloor(((i_month * 13) + 8) / 5);
+    f_week_day = (i_year + i_month + i_day) % 7;
+    return (integer)f_week_day;
+}
+
+// 本日の日付時刻をタイムスタンプとして記録
+JPtimestamp()
+{ 
+  JPdate_time();
+  week_day = llList2String(week_days,week_day_num(year,month,day));
+  Timestamp = (string)year + "年" + (string)month + "月"+(string)day + "日" + "(" + week_day + ")" + " " +
+              (string)hours + "時" + (string)minutes + "分" + (string)seconds+ "秒";
+}
+
+CreateIndex()
+{
+  integer i;
+  Link_Prims = ["root"];
+  integer nop = llGetNumberOfPrims();
+  for (i = 1; i <= nop; i++){
+    string linkPrim = llGetLinkName(i);
+    Link_Prims += [linkPrim];
+  }
+}
+
+integer GetIndex(string name)
+{
+  return llListFindList(Link_Prims,(list)name);
+}
+
+list     Link_Prims;
+
+setup()
+{ 
+  Power = TRUE;
+  Owner = llGetOwner();
+  CreateIndex();
+  Region_Name = llGetRegionName();
+  llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXT,"情報通のたぬき兄貴",<1.0, 1.0, 1.0>,1.0]);    
+}
+
+set1(string str)
+{
+  llSetTimerEvent(0);
+  Timer_Count = (integer)str;
+  llWhisper(0,"\n地域情報の取得間隔が" + (string)Timer_Count + "秒に変更されました");
+  llSetTimerEvent(Timer_Count);
+}
+
+set2(string str)
+{ 
+  Observation_Tex_Frag = [];
+  llSleep(0.1);
+  Observation_Tex_Frag = llParseString2List(str,["*"],[]);
+  llSetTimerEvent(Timer_Count);
+}
+
+set3(string str)
+{
+  Timer_Count = (integer)str;
+}
+
+set4(string str)
+{
+  if (str == ""){
+    Date = "前回の再起動　未計測";
+  }
+  else{
+  Date = str;
+  }
+  llSetTimerEvent(Timer_Count);
+}
+
+default
+{
+    state_entry()
+    {
+      setup();
+      if (SetupF == FALSE){
+        llMessageLinked(LINK_SET,20,"",NULL_KEY); //コアスクリプトへ
+        SetupF = TRUE;
+      }
+    }
+           
+　　 timer()
+    {　
+      Region_Name = llGetRegionName();
+      string Observation_Data = "たぬき" + "\n" + Region_Name + "\n";
+      
+      if (llList2Integer(Observation_Tex_Frag,0) == 1)
+        Observation_Data += Date + "\n";
+      if (llList2Integer(Observation_Tex_Frag,1) == 1)
+        Observation_Data += "SIM内のアバター数 " + (string)llGetRegionAgentCount() + "人" + "\n";
+      if (llList2Integer(Observation_Tex_Frag,2) == 1)
+        Observation_Data += "FPS " + llGetSubString((string)Round(llGetRegionFPS()),0,4) + "\n";
+      if (llList2Integer(Observation_Tex_Frag,3) == 1)
+        Observation_Data += "Time Dilation " + llGetSubString((string)Round(llGetRegionTimeDilation()),0,3) + "\n";
+      if (llList2Integer(Observation_Tex_Frag,4) == 1)
+        Observation_Data += "現在地のLI " + (string)llGetParcelPrimCount(llGetPos(), PARCEL_COUNT_TOTAL, FALSE) + "/" + (string)llGetParcelMaxPrims(llGetPos(),FALSE) + "\n";
+      if (llList2Integer(Observation_Tex_Frag,5) == 1)
+        Observation_Data += "SIM内所有地全体のLI " + (string)llGetParcelPrimCount(llGetPos(), PARCEL_COUNT_TOTAL, TRUE) + "/" + (string)llGetParcelMaxPrims(llGetPos(),TRUE) + "\n";
+    　if (llList2Integer(Observation_Tex_Frag,6) == 1)
+        Observation_Data += "臨時プリムの数 " + (string)llGetParcelPrimCount(llGetPos(),PARCEL_COUNT_TEMP, FALSE) + "\n";
+      if (llList2Integer(Observation_Tex_Frag,7) == 1){    
+        vector Sun1= llGetSunDirection();
+        string Sun2;  
+        if (Sun1.z > 0.0){
+          Sun2 = "昼";
+        }
+        else{
+          Sun2 = "夜";
+        }
+        Observation_Data += "太陽状況　" + Sun2;
+      }
+      llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXT,Observation_Data,<1.0, 1.0, 1.0>,1.0]);
+    }
+    
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      if (num == 0)
+        llResetScript();
+        
+      if (num == 1){
+        Power = FALSE;
+        state poweroff;
+      }
+    
+      if (num == 5){
+        set1(str);
+      }
+      if (num == 11){
+        llSetTimerEvent(0);
+        Observation_Tex_Frag = [];
+        set2(str);
+      }
+      
+      if (num == 19){ //コアスクリプトがリセットされた時にこのスクリプトもリセット
+        llResetScript();
+      }
+
+      if (num == 24){ //地域観測の情報表示設定を読み込み
+        set2(str);
+        llMessageLinked(LINK_SET,25,"",NULL_KEY); //コアスクリプトへ
+      }
+
+      if (num == 29){ //地域観測の情報更新間隔を読み込み
+        set3(str);
+        llMessageLinked(LINK_SET,30,"",NULL_KEY); //コアスクリプトへ
+      }
+
+    　if (num == 31){
+        set4(str);
+        llMessageLinked(LINK_SET,32,"",NULL_KEY); //データスクリプトへ
+      }
+
+      if (num == 35)
+       Date = str;
+    }
+    
+    changed(integer change)
+    {  
+      if (change & CHANGED_REGION_START){
+        Region_Name = llGetRegionName();
+        JPtimestamp();
+        Date = "前回の再起動\n" + Timestamp;
+        list Parse = llParseString2List(Region_Name + "/" + Date,["/"],[]);
+        llMessageLinked(LINK_SET,7,Region_Name,NULL_KEY);
+        llMessageLinked(LINK_THIS,30,llDumpList2String(Parse,"/"),NULL_KEY);
+      }
+    }
+}
+
+state poweroff
+{
+    state_entry()
+    {
+      llSetTimerEvent(0);
+      llSetLinkPrimitiveParamsFast(GetIndex("TANUKI HEAD"),[PRIM_TEXT,"電源OFF",<1.0, 1.0, 1.0>,1.0]);
+    }
+    
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      if (num == 0)
+        llResetScript();
+      
+      if (num == 1){
+        llSetTimerEvent(Timer_Count); 
+        state default;
+      }
+       
+      if (num == 5)
+        set1(str);
+        
+      if (num == 19){
+        llResetScript();
+      }
+   
+      if (num == 24){
+        set2(str);
+        llMessageLinked(LINK_SET,25,"",NULL_KEY);
+      }
+
+      if (num == 29){
+        set3(str);
+        llMessageLinked(LINK_SET,30,"",NULL_KEY); //コアスクリプトへ
+      }
+
+      if (num == 31){
+        set4(str);
+        llMessageLinked(LINK_SET,32,"",NULL_KEY); //コアスクリプト
+      }
+      
+      if (num == 35)
+        Date = str;
+      }
+}
