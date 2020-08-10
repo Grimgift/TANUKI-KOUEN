@@ -1,0 +1,46 @@
+
+list    Reboot_AVkey_list = [];
+
+default
+{
+    link_message(integer sender_num, integer num, string str, key id)
+    {
+      if (num == 300){
+        if (llGetFreeMemory() <= 2048){
+          llRegionSayTo(id,0,"再起動お知らせスクリプトの空きメモリ容量が限界になりましたのでお知らせリストに登録できませんでした" + "\n" +
+                             "再起動お知らせ機能を終了します…");
+        }
+        else{
+          if (~llListFindList(Reboot_AVkey_list,(list)id)){ 
+            integer a = (1 + llListFindList(Reboot_AVkey_list,(list)id)) * 2;
+            llRegionSayTo(id,0,"\nあなたは既に今回の地域再起動お知らせに登録しています" + "\n" +
+                               "SIMがオンラインになった約"+ (string)a + "秒後にIMが届きます");
+          }
+          else{
+            Reboot_AVkey_list += id; 
+            integer b = llGetListLength(Reboot_AVkey_list) * 2;
+            llRegionSayTo(id,0,"\n貴方のキーを今回の地域再起動お知らせに登録しました" + "\n" +
+                              "SIMがオンラインになった約"+ (string)b + "秒後にIMが届きます");
+          }
+        }
+        llSleep(0.1);
+        llMessageLinked(LINK_THIS,301,"",NULL_KEY);
+      } 
+    }
+    
+    changed(integer change)
+    {
+      if (change & CHANGED_REGION_START){
+        string  Region_Name = llGetRegionName();
+
+        integer a;
+        integer b = llGetListLength(Reboot_AVkey_list);
+        for (a = 0 ; a < b ; a++){
+          llInstantMessage(llList2Key(Reboot_AVkey_list,a),Region_Name + "がオンラインになりました");
+        }
+        Reboot_AVkey_list = [];
+        llSleep(0.1);
+        llResetScript();
+      }
+    }
+}
